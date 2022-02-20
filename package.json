@@ -1,0 +1,23 @@
+{
+  "name": "fastify-scaffold",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "build": "babel src -d dist",
+    "start": "npm run build && node dist/index.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@babel/cli": "^7.17.3",
+    "@babel/core": "^7.17.5",
+    "@babel/preset-env": "^7.16.11"
+  },
+  "dependencies": {
+    "fastify": "^3.27.2",
+    "fastify-crud-generator": "^1.0.0",
+    "http-status": "^1.5.0"
+  }
+}
