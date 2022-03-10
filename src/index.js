@@ -1,56 +1,55 @@
-import Fastify from "fastify";
-import crud from "fastify-crud-generator";
+import fastify from 'fastify';
 import { generate as generateComb } from "ordered-uuid-v4";
-import configureLogging from "./utils/logger";
-import usersController from "./Users/users-controller";
+import initLogger from "./lib/logger";
+import loadConfig from './lib/config';
+import now from 'fastify-now';
+import path from 'path';
 
-const REDACTED = "[*** Redacted ***]";
-const REQUEST_ID_HEADER = "trace-id";
+loadConfig();
 
-const fastify = Fastify({
-  logger: {
-    redact: {
-      paths: ["headers.authorization"],
-      remove: false,
-      censor: REDACTED,
+export const createServer = async () => {
+  const server = fastify({
+    logger: {
+      level: process.env.LOG_LEVEL,
     },
-    level: "info",
-  },
-  genReqId(req) {
-    return generateComb();
-  },
-  disableRequestLogging: true,
-  requestIdHeader: REQUEST_ID_HEADER,
-});
+    genReqId(req) {
+      return generateComb();
+    },
+    disableRequestLogging: true,
+    requestIdHeader: process.env.TRACE_ID_HEADER,
+  });
 
-configureLogging(fastify);
+  initLogger(server);
+  
+  server.register(now, {
+    routesFolder: path.join(__dirname, './routes'),
+  });
 
-fastify.get("/debug-headers", async (req) => {
-  req.log.info(
-    { headers: req.headers },
-    "Logging request headers for debugging..."
-  );
+  await server.ready();
+  return server;
+}
 
-  return { ok: true };
-});
-
-fastify
-  .register(crud, {
-    prefix: "/users",
-    controller: usersController,
-  })
-  .after(() => console.log(fastify.printRoutes()));
-
-const start = async () => {
-  try {
-    await fastify.listen(
-      process.env.PORT || 4100,
-      process.env.HOST || "localhost"
-    );
-  } catch (err) {
-    fastify.log.error(err);
+export const startServer = async () => {
+  process.on('unhandledRejection', (err) => {
+    console.error(err);
     process.exit(1);
-  }
-};
+  });
 
-start();
+  const server = await createServer();
+  await server.listen(+process.env.SERVER_PORT, process.env.SERVER_HOST);
+
+  for (const signal of ['SIGINT', 'SIGTERM']) {
+    process.on(signal, () =>
+      server
+        .close()
+        .then((err) => {
+          console.log(`Closing server on ${signal}`);
+          process.exit(err ? 1 : 0);
+        }),
+    );
+  }
+}
+
+if (process.env.NODE_ENV !== 'test') {
+  startServer();
+}
