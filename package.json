@@ -21,9 +21,7 @@
   "dependencies": {
     "dotenv": "^16.0.0",
     "fastify": "^3.27.4",
-    "fastify-now": "^2.5.2",
     "ordered-uuid-v4": "^0.2.1",
-    "path": "^0.12.7",
     "pretty-hrtime": "^1.0.3"
   }
 }

@@ -1,9 +1,8 @@
-import fastify from 'fastify';
+import fastify from "fastify";
 import { generate as generateComb } from "ordered-uuid-v4";
 import initLogger from "./lib/logger";
-import loadConfig from './lib/config';
-import now from 'fastify-now';
-import path from 'path';
+import initRoutes from './routes';
+import loadConfig from "./lib/config";
 
 loadConfig();
 
@@ -19,18 +18,15 @@ export const createServer = async () => {
     requestIdHeader: process.env.TRACE_ID_HEADER,
   });
 
-  initLogger(server);
-  
-  server.register(now, {
-    routesFolder: path.join(__dirname, './routes'),
-  });
-
+  await initLogger(server);
+  await initRoutes(server);  
   await server.ready();
+  
   return server;
-}
+};
 
 export const startServer = async () => {
-  process.on('unhandledRejection', (err) => {
+  process.on("unhandledRejection", (err) => {
     console.error(err);
     process.exit(1);
   });
@@ -38,18 +34,16 @@ export const startServer = async () => {
   const server = await createServer();
   await server.listen(+process.env.SERVER_PORT, process.env.SERVER_HOST);
 
-  for (const signal of ['SIGINT', 'SIGTERM']) {
+  for (const signal of ["SIGINT", "SIGTERM"]) {
     process.on(signal, () =>
-      server
-        .close()
-        .then((err) => {
-          console.log(`Closing server on ${signal}`);
-          process.exit(err ? 1 : 0);
-        }),
+      server.close().then((err) => {
+        console.log(`Closing server on ${signal}`);
+        process.exit(err ? 1 : 0);
+      })
     );
   }
-}
+};
 
-if (process.env.NODE_ENV !== 'test') {
+if (process.env.NODE_ENV !== "test") {
   startServer();
 }
